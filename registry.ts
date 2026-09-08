@@ -334,7 +334,7 @@ export class MachineRegistry {
 			try {
 				await this.startProfile(stored);
 			} catch (error) {
-				this.database.profiles.setEnabled(id, false);
+				this.database.profiles.delete(id);
 				throw error;
 			}
 		}
