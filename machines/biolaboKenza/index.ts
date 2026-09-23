@@ -69,7 +69,7 @@ export const biolaboKenzaMachineId = 'biolabo-kenza';
 
 export class BiolaboKenza extends BaseMachine {
 	static readonly id = biolaboKenzaMachineId;
-	static readonly brand = 'BIOLABO';
+	static readonly brand = 'BIOLABO-KENZA240TX';
 	static readonly protocol = {
 		name: 'Custom String (Id8/Id9)',
 		version: 'Kenza 240TX',
@@ -263,6 +263,8 @@ export class BiolaboKenza extends BaseMachine {
 	private kenzaConn?: KenzaSerialProtocol;
 	private pushTimer?: ReturnType<typeof setInterval>;
 	private pushing = false;
+	/** Background read loop, resolves once the link closes. */
+	private readLoop?: Promise<void>;
 	private readonly pendingOrders = new Map<string, MachineOrder>();
 
 	constructor() {
@@ -294,7 +296,7 @@ export class BiolaboKenza extends BaseMachine {
 		);
 	}
 
-	override async start(): Promise<void> {
+	override start(): Promise<void> {
 		if (!this.kenzaConn) {
 			throw new Error(
 				'BiolaboKenza protocol is not initialized. Call connect() first.',
@@ -302,11 +304,15 @@ export class BiolaboKenza extends BaseMachine {
 		}
 		this.markStarted();
 		this.startPushTimer();
-		try {
-			await this.kenzaConn.start();
-		} finally {
+
+		// The serial read loop blocks until the port closes, so it runs in the
+		// background. Awaiting it here would never return, and the registry
+		// would never record this machine as running. shutdown() drains it.
+		this.readLoop = this.kenzaConn.start().finally(() => {
 			this.clearPushTimer();
-		}
+			if (this.connected) this.markDisconnected();
+		});
+		return Promise.resolve();
 	}
 
 	override async shutdown(): Promise<void> {
@@ -315,6 +321,11 @@ export class BiolaboKenza extends BaseMachine {
 		const conn = this.kenzaConn;
 		this.kenzaConn = undefined;
 		if (conn) conn.close();
+
+		// Let the background reader observe the close before we tear down.
+		const readLoop = this.readLoop;
+		this.readLoop = undefined;
+		if (readLoop) await readLoop.catch((error) => this.handleError(error));
 
 		this.com = undefined;
 		this.pendingOrders.clear();

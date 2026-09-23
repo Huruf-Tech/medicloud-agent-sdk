@@ -38,6 +38,7 @@ function resolvePatientId(order: MachineOrder): string {
 
 function resolveKenzaType(order: MachineOrder): string {
 	const explicitType = firstNonBlank(
+		(order as unknown as Record<string, unknown>).kenzaType as string | undefined,
 		order.species,
 		order.sampleType,
 	);
