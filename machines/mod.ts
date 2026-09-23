@@ -29,6 +29,7 @@ import { IFlash3000 } from './iflash/index.ts';
 import { Maglumi800 } from './maglumi800/index.ts';
 import { RocheCobasC111 } from './rocheCobasC111/index.ts';
 import { SysmexKx21n } from './sysmexKx21n/index.ts';
+import { DrAccuAfi6100b } from './draccuAfi6100b/index.ts';
 import { BiolaboKenza } from './biolaboKenza/index.ts';
 
 /**
@@ -40,9 +41,11 @@ machineRegistry.register(Maglumi800);
 machineRegistry.register(RocheCobasC111);
 machineRegistry.register(SysmexKx21n);
 machineRegistry.register(BiolaboKenza);
+machineRegistry.register(DrAccuAfi6100b);
 
 export * from './iflash/index.ts';
 export * from './maglumi800/index.ts';
 export * from './rocheCobasC111/index.ts';
 export * from './sysmexKx21n/index.ts';
 export * from './biolaboKenza/index.ts';
+export * from './draccuAfi6100b/index.ts';

@@ -1,3 +1,5 @@
+import { DRACCU_AFI_6100B_CATALOG } from '../machines/draccuAfi6100b/catalog.ts';
+import { drAccuAfi6100bMachineId } from '../machines/draccuAfi6100b/index.ts';
 import * as z from '@zod/zod';
 import { IFLASH_3000_TESTS } from '../machines/iflash/catalog.ts';
 import { iFlash3000MachineId } from '../machines/iflash/index.ts';
@@ -56,6 +58,15 @@ const kenzaTests: readonly CatalogTestEntry[] = BIOLABO_KENZA_ORDER_CATALOG.map(
 	(t) => singleAnalyteTest(t.code, t.name),
 );
 
+// Convert DrAccu tests to the common catalog format.
+// Publish accepted plain names, with the numeric result item ID.
+// Batch duplicates stay in the reference catalog, not the order picker.
+const drAccuTests: readonly CatalogTestEntry[] = [
+	...new Map(DRACCU_AFI_6100B_CATALOG.map((test) => [
+		test.item_name, singleAnalyteTest(test.item_name, test.item_name, test.item_id),
+	])).values(),
+];
+
 // catalog manager
 const CATALOGS: readonly CatalogView[] = [
 	{
@@ -87,6 +98,12 @@ const CATALOGS: readonly CatalogView[] = [
 		driverId: biolaboKenzaMachineId,
 		machine: 'BioLabo Kenza 240TX',
 		tests: kenzaTests,
+	},
+	{
+		id: drAccuAfi6100bMachineId,
+		driverId: drAccuAfi6100bMachineId,
+		machine: 'DrAccu AFI-6100B',
+		tests: drAccuTests,
 	},
 ];
 
