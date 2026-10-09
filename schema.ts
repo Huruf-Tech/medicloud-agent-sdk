@@ -33,8 +33,9 @@ export const ProfilesQuerySchema = z.object({
 	name: NonEmptyStringSchema.optional(),
 	// enabled: z.boolean().optional(),
 	enabled: z.preprocess(
-		(value) => value === "true" ? true : value === "false" ? false : value,
-		z.boolean().optional()),
+		(value) => value === 'true' ? true : value === 'false' ? false : value,
+		z.boolean().optional(),
+	),
 	limit: PositiveIntegerParamSchema.optional(),
 	offset: NonNegativeIntegerParamSchema.optional(),
 }).strict();

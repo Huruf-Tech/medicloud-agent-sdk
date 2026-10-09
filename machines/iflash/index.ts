@@ -1,12 +1,12 @@
 import * as z from '@zod/zod';
 import { BaseMachine } from '../../abstracts/baseMachine.ts';
 import type {
+	DriverConfigField,
+	DriverTransportType,
 	MachineConfig,
 	MachineConfigSchema,
 	MachineOrder,
 	TransportSpec,
-	DriverConfigField,
-	DriverTransportType
 } from '../../types.ts';
 import { AstmProtocol } from '../../protocols/astm/link.ts';
 import { MachineCom } from '../../transports/machineCom.ts';
@@ -20,8 +20,13 @@ import {
 	buildIFlashOrderResponse,
 } from './outbound.ts';
 import { delay } from '../../lib/utils.ts';
-import { iFlashVariantFromModel, requireIFlashTestEntry, YHLO_IFLASH_3000_MODELS } from './catalog.ts';
+import {
+	iFlashVariantFromModel,
+	requireIFlashTestEntry,
+	YHLO_IFLASH_3000_MODELS,
+} from './catalog.ts';
 import { IFLASH_ASTM_OPTIONS } from './astm.ts';
+import { iFlash3000MachineId } from '../../lib/constants.ts';
 
 export interface IFlash3000Config extends MachineConfig {
 	host: string;
@@ -29,16 +34,14 @@ export interface IFlash3000Config extends MachineConfig {
 	queryReplyDelayMs?: number;
 }
 
-export const iFlash3000MachineId = 'iflash3000';
-
 const DEFAULT_QUERY_REPLY_DELAY_MS = 0;
 
 export class IFlash3000 extends BaseMachine {
 	static readonly id = iFlash3000MachineId;
-	static readonly brand = 'YHLO';
+	static readonly brand = 'YHLO IFLASH 3000';
 	static readonly protocol = { name: 'ASTM', version: 'E1394-97' } as const;
 	static readonly transportType: DriverTransportType = 'tcp';
-	static readonly models = YHLO_IFLASH_3000_MODELS
+	static readonly models = YHLO_IFLASH_3000_MODELS;
 
 	// for backend profile config before save
 	static readonly configSchema = z.object({
@@ -49,10 +52,31 @@ export class IFlash3000 extends BaseMachine {
 
 	// for frontend fields generation
 	static readonly configFields = [
-		{ key: "host", label: "Host", type: "string", required: true, default: "0.0.0.0", hint: "IP address the analyzer connects to." },
-		{ key: 'port', label: 'Port', type: 'number', required: true, default: 7001, hint: 'TCP port (1-65535).' },
-		{ key: 'queryReplyDelayMs', label: 'Query reply delay (ms)', type: 'number', required: false, default: 0, hint: 'Milliseconds to wait before replying to a query.' },
-	] as const satisfies DriverConfigField[]
+		{
+			key: 'host',
+			label: 'Host',
+			type: 'string',
+			required: true,
+			default: '0.0.0.0',
+			hint: 'IP address the analyzer connects to.',
+		},
+		{
+			key: 'port',
+			label: 'Port',
+			type: 'number',
+			required: true,
+			default: 7001,
+			hint: 'TCP port (1-65535).',
+		},
+		{
+			key: 'queryReplyDelayMs',
+			label: 'Query reply delay (ms)',
+			type: 'number',
+			required: false,
+			default: 0,
+			hint: 'Milliseconds to wait before replying to a query.',
+		},
+	] as const satisfies DriverConfigField[];
 
 	readonly id = IFlash3000.id;
 	readonly brand = IFlash3000.brand;
@@ -186,7 +210,7 @@ export class IFlash3000 extends BaseMachine {
 				order,
 				parsed.machine.model || 'YHLO iFlash 3000',
 			);
-			console.log(`iflash3000 machine qurying:`, response, order)
+			console.log(`iflash3000 machine qurying:`, response, order);
 			await this.delayBeforeQueryReply();
 			await protocol.send(response);
 

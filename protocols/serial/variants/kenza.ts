@@ -15,7 +15,10 @@
 
 import type { RawConnection } from '../../../types.ts';
 import type { Logger } from '../../../lib/logger.ts';
-import { SerialStringProtocol, type SerialStringPayloadHandler } from '../link.ts';
+import {
+	type SerialStringPayloadHandler,
+	SerialStringProtocol,
+} from '../link.ts';
 
 export class KenzaSerialProtocol extends SerialStringProtocol {
 	constructor(

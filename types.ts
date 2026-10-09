@@ -68,7 +68,6 @@ export interface DriverConfigField {
 	hint?: string;
 }
 
-
 // store related
 // shared
 export type DbValue = string | number | bigint | Uint8Array | null;
@@ -301,12 +300,30 @@ export interface IMachineTestStatisticStore {
 	count(): number;
 }
 
+// 5. machine catalogs
+export interface IMachineCatalogStore {
+	list(): CatalogView[];
+	get(driverId: MachineDriverId): CatalogView | undefined;
+	create(driverId: MachineDriverId, machine: string): CatalogView;
+	rename(driverId: MachineDriverId, machine: string): CatalogView | undefined;
+	upsertTest(
+		driverId: MachineDriverId,
+		test: CatalogTestEntry,
+	): CatalogTestEntry;
+	getTest(
+		driverId: MachineDriverId,
+		code: string,
+	): CatalogTestEntry | undefined;
+	deleteTest(driverId: MachineDriverId, code: string): boolean;
+}
+
 // SQLite DB
 export interface IMachineSQLiteDB {
 	readonly profiles: IMachineProfileStore;
 	readonly orders: IMachineOrderStore;
 	readonly results: IMachineResultStore;
 	readonly testStatistics: IMachineTestStatisticStore;
+	readonly catalogs: IMachineCatalogStore;
 	readonly connected: boolean;
 
 	connect(): void;
@@ -398,7 +415,7 @@ export interface RegisteredMachine<
 	TConfig extends MachineConfig = MachineConfig,
 	TMachine extends BaseMachine = BaseMachine,
 > {
-	new(): TMachine;
+	new (): TMachine;
 	readonly id: MachineDriverId;
 	readonly brand?: string;
 	readonly models?: readonly string[];
@@ -475,7 +492,7 @@ export type ValidationResult<T> = { ok: true; value: T } | {
  *
  * The `code` is used to match this analyte with the `assayNo`
  * returned by the machine driver.
- * 
+ *
  * Basically, it tells "What individual results can this test produce?"
  */
 export interface CatalogAnalyteEntry {
@@ -487,6 +504,8 @@ export interface CatalogAnalyteEntry {
 
 	// Unit of the result, if applicable, e.g. "g/dL".
 	readonly unit?: string;
+	readonly category?: string;
+	readonly decimals?: number;
 }
 
 /**
@@ -497,7 +516,7 @@ export interface CatalogAnalyteEntry {
  *
  * Example:
  * "GLU" may have one analyte, while "CBC" may have many.
- * 
+ *
  * Basically, it tells "What test is available?"
  */
 export interface CatalogTestEntry {
@@ -509,6 +528,13 @@ export interface CatalogTestEntry {
 
 	// Results/analytes that can be returned for this test.
 	readonly analytes: readonly CatalogAnalyteEntry[];
+	readonly aliases?: readonly string[];
+	readonly deviceCode?: string;
+	readonly unit?: string;
+	readonly normalRange?: string;
+	readonly category?: string;
+	readonly slot?: number;
+	readonly enabled?: boolean;
 }
 
 // catalog view
@@ -517,6 +543,7 @@ export interface CatalogView {
 	readonly driverId: MachineDriverId;
 	readonly machine: string;
 	readonly tests: readonly CatalogTestEntry[];
+	readonly source?: 'database' | 'static';
 }
 
 // // Http Server

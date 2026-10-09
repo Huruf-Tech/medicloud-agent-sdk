@@ -5,3 +5,4 @@ data/
 binaries/
 node_modules/
 config.bat
+tests/

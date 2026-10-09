@@ -21,7 +21,7 @@ export async function handleResultRoutes(
 	}
 
 	// GET /results/count
-	if (method === 'GET' && segments.length === 1 && segments[0] === "count") {
+	if (method === 'GET' && segments.length === 1 && segments[0] === 'count') {
 		const resultsCount = await registry.countResults() ?? 0;
 		return json({ count: resultsCount });
 	}

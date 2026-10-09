@@ -1,3 +1,5 @@
+import { managedCatalogTests } from '../../lib/catalogAccess.ts';
+
 export interface IFlashTestEntry {
 	readonly testCode: string;
 	readonly testName: string;
@@ -6,7 +8,7 @@ export interface IFlashTestEntry {
 }
 
 export const YHLO_IFLASH_3000_MODELS = [
-	'yhlo-iflash-3000'
+	'yhlo-iflash-3000',
 ] as const;
 
 export type IFlashVariant = '1800' | '3000';
@@ -130,8 +132,22 @@ export function findIFlashTestEntry(
 	testCode: string,
 	variant: IFlashVariant = '3000',
 ): IFlashTestEntry | undefined {
-	const catalog = variant === '3000' ? IFLASH_3000_TESTS : IFLASH_1800_TESTS;
-	return catalog.find((test) => test.isActive && test.testCode === testCode);
+	const test = managedCatalogTests('iflash3000').find((entry) =>
+		entry.code === testCode && entry.enabled !== false
+	);
+	if (!test) return undefined;
+	const channelNumber = Number(test.analytes[0]?.code);
+	if (!Number.isSafeInteger(channelNumber) || channelNumber <= 0) {
+		throw new Error(
+			`iFlash ${variant} test "${testCode}" needs a numeric channel analyte.`,
+		);
+	}
+	return {
+		testCode: test.code,
+		testName: test.name,
+		channelNumber,
+		isActive: true,
+	};
 }
 
 /** Return the configured analyzer channel or reject an unsupported test code. */

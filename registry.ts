@@ -3,7 +3,13 @@ import { BaseMachine } from './abstracts/baseMachine.ts';
 import { SqliteMachineDatabase } from './db/sqLite.ts';
 import { createLogger, type Logger } from './lib/logger.ts';
 import { requiredValue } from './lib/utils.ts';
+import { findStaticCatalog, STATIC_CATALOGS } from './http/utils.ts';
 import type {
+	CatalogTestEntry,
+	CatalogView,
+	DriverConfigField,
+	DriverProtocolInfo,
+	DriverTransportType,
 	MachineDriverId,
 	MachineEventHandler,
 	MachineId,
@@ -17,9 +23,6 @@ import type {
 	RegisteredMachine,
 	RunningMachine,
 	StoredMachineResult,
-	DriverConfigField,
-	DriverProtocolInfo,
-	DriverTransportType
 } from './types.ts';
 import {
 	TOrderQuery,
@@ -44,7 +47,7 @@ export interface MachineDriverView {
 	readonly defaultOrderTests: readonly string[];
 
 	// field descriptor, this tells the UI what input to render for this driver config.
-	readonly configFields: readonly DriverConfigField[]
+	readonly configFields: readonly DriverConfigField[];
 	// this tells the ui what kind of driver it is to show config
 	readonly transportType?: DriverTransportType;
 }
@@ -156,10 +159,72 @@ export class MachineRegistry {
 			brand: driver.brand,
 			models: driver.models ?? [],
 			protocol: driver.protocol,
-			defaultOrderTests: driver.defaultOrderTests ?? [],
+			defaultOrderTests: this.activeDefaultTests(driver.id),
 			configFields: driver.configFields ?? [],
 			transportType: driver.transportType ?? 'custom',
 		}));
+	}
+
+	listCatalogs(): Array<
+		{
+			id: string;
+			driverId: string;
+			machine: string;
+			catalogCount: number;
+			source: string;
+		}
+	> {
+		return [...this.database.catalogs.list(), ...STATIC_CATALOGS].map((
+			catalog,
+		) => ({
+			id: catalog.id,
+			driverId: catalog.driverId,
+			machine: catalog.machine,
+			catalogCount:
+				catalog.tests.filter((test) => test.enabled !== false).length,
+			source: catalog.source ?? 'database',
+		}));
+	}
+
+	getCatalog(value: string): CatalogView | undefined {
+		const staticCatalog = findStaticCatalog(value);
+		if (staticCatalog) return staticCatalog;
+
+		return this.database.catalogs.get(value) ??
+			this.database.catalogs.list().find((catalog) =>
+				catalog.machine.toLowerCase() === value.toLowerCase()
+			);
+	}
+
+	createCatalog(driverId: string, machine: string): CatalogView {
+		if (!this.registrations.has(driverId)) {
+			throw new Error('Unknown machine driver.');
+		}
+		if (this.getCatalog(driverId)) {
+			throw new Error('Catalog already exists.');
+		}
+		return this.database.catalogs.create(driverId, machine);
+	}
+
+	renameCatalog(driverId: string, machine: string): CatalogView | undefined {
+		if (findStaticCatalog(driverId)) return undefined;
+
+		return this.database.catalogs.rename(driverId, machine);
+	}
+
+	upsertCatalogTest(
+		driverId: string,
+		test: CatalogTestEntry,
+	): CatalogTestEntry | undefined {
+		if (
+			findStaticCatalog(driverId) || !this.database.catalogs.get(driverId)
+		) return undefined;
+		return this.database.catalogs.upsertTest(driverId, test);
+	}
+
+	deleteCatalogTest(driverId: string, code: string): boolean {
+		if (findStaticCatalog(driverId)) return false;
+		return this.database.catalogs.deleteTest(driverId, code);
 	}
 
 	// local running machines list
@@ -410,12 +475,12 @@ export class MachineRegistry {
 		// before deleting profile checking that any order,result,testStatistics exist? if yes fix these then remove
 		const hasOrders =
 			this.database.orders.query({ machineId, limit: 1 }).length >
-			0;
+				0;
 		const hasResults =
 			this.database.results.query({ machineId, limit: 1 }).length > 0;
 		const hasStatistics =
 			this.database.testStatistics.query({ machineId, limit: 1 }).length >
-			0;
+				0;
 		if (hasOrders || hasResults || hasStatistics) {
 			throw new Error(
 				`Cannot delete machine profile ${machineId}: orders, results, or test statistics still reference it.`,
@@ -456,7 +521,7 @@ export class MachineRegistry {
 		const running = this.requireOrderMachine(order.machineId);
 		const tests = order.tests?.length > 0
 			? order.tests
-			: this.getRegistration(running.profile.driverId).defaultOrderTests;
+			: this.activeDefaultTests(running.profile.driverId);
 		if (!tests?.length) {
 			throw new Error(
 				`Machine driver "${running.profile.driverId}" requires at least one test code.`,
@@ -529,7 +594,7 @@ export class MachineRegistry {
 			estimatedDurationMinutes: update.estimatedDurationMinutes === null
 				? undefined
 				: update.estimatedDurationMinutes ??
-				current.estimatedDurationMinutes,
+					current.estimatedDurationMinutes,
 			estimatedCompletionAt: update.estimatedCompletionAt === null
 				? undefined
 				: update.estimatedCompletionAt ?? current.estimatedCompletionAt,
@@ -790,13 +855,15 @@ export class MachineRegistry {
 		const bindings: MachineEventBindings = {
 			connected: ({ source }) => {
 				this.log.info(
-					`machine connected id=${machineId} source=${source ?? machine.id
+					`machine connected id=${machineId} source=${
+						source ?? machine.id
 					}`,
 				);
 			},
 			disconnected: ({ source }) => {
 				this.log.info(
-					`machine disconnected id=${machineId} source=${source ?? machine.id
+					`machine disconnected id=${machineId} source=${
+						source ?? machine.id
 					}`,
 				);
 
@@ -811,7 +878,8 @@ export class MachineRegistry {
 				// A query alone does not mean an order reached the analyzer. The
 				// driver emits order-sent after its protocol response succeeds.
 				this.log.info(
-					`machine order query id=${machineId} sample="${sampleId ?? ''
+					`machine order query id=${machineId} sample="${
+						sampleId ?? ''
 					}"`,
 				);
 
@@ -936,6 +1004,20 @@ export class MachineRegistry {
 		return Promise.resolve();
 	}
 
+	private activeDefaultTests(driverId: MachineDriverId): readonly string[] {
+		const defaults = this.getRegistration(driverId).defaultOrderTests ?? [];
+		if (!this.db?.connected) return defaults;
+
+		const catalog = this.getCatalog(driverId);
+		if (catalog?.source !== 'database') return defaults;
+
+		return defaults.filter((code) =>
+			catalog.tests.some((test) =>
+				test.enabled !== false && test.code === code
+			)
+		);
+	}
+
 	private async synchronizeOrders(
 		machineId: MachineId,
 		machine: BaseMachine,
@@ -960,7 +1042,7 @@ export class MachineRegistry {
 				this.database.orders.update(preparedOrder.id, {
 					estimatedDurationMinutes:
 						preparedOrder.estimatedDurationMinutes ??
-						null,
+							null,
 					estimatedCompletionAt: null,
 				});
 			}

@@ -1,21 +1,31 @@
-import type { CatalogTestEntry } from '../../types.ts';
+/** LIS test codes transcribed from the Bonavera 200 analyzer settings screen. */
+export interface Bonavera200Assay {
+	readonly code: string;
+	readonly name: string;
+}
 
-/**
- * FAKE CATALOG FOR DISCOVERY ONLY.
- * The lab has not supplied Bonavera 200 order test numbers or verified result codes.
- * This entry keeps the machine visible in catalog-based UI flows, but it is not
- * an analyzer test. The driver rejects this code before any DSR order is sent.
- * Replace it with verified analyzer order codes and OBX result analytes after
- * reviewing lab captures. Cloud orders selecting this fake test fail before
- * transmission. Unmatched ORU results also fail normal persistence, but their
- * assay number, name and unit are saved to
- * ./data/bonavera200-catalog-captures.jsonl in the SDK process directory.
- * Do not infer an order code from an OBX code alone.
- */
-export const BONAVERA_200_PLACEHOLDER_TEST_CODE = 'BONAVERA_200_UNVERIFIED';
-
-export const BONAVERA_200_PLACEHOLDER_CATALOG: readonly CatalogTestEntry[] = [{
-	code: BONAVERA_200_PLACEHOLDER_TEST_CODE,
-	name: 'FAKE Bonavera 200 test, discovery only',
-	analytes: [],
-}];
+export const BONAVERA_200_ORDER_CATALOG: readonly Bonavera200Assay[] = [
+	{ code: '1', name: 'Glu Cor' },
+	{ code: '2', name: 'ALP cor' },
+	{ code: '3', name: 'GPT Cor' },
+	{ code: '4', name: 'Urea co' },
+	{ code: '5', name: 'HbA1cG' },
+	{ code: '6', name: 'GOT Cor' },
+	{ code: '7', name: 'chol co' },
+	{ code: '8', name: 'TG Cor' },
+	{ code: '9', name: 'CRP cor' },
+	{ code: '10', name: 'ca cor' },
+	{ code: '11', name: 'Crat Co' },
+	{ code: '12', name: 'CK Cor' },
+	{ code: '13', name: 'CKMP co' },
+	{ code: '14', name: 'zinc Co' },
+	{ code: '15', name: 'LDL_C' },
+	{ code: '16', name: 'HDL_C' },
+	{ code: '17', name: 'MG' },
+	{ code: '18', name: 'PH_C' },
+	{ code: '19', name: 'T_BIL' },
+	{ code: '20', name: 'D_BIL' },
+	{ code: '21', name: 'U.A CO' },
+	{ code: '22', name: 'Iron CO' },
+	{ code: '0', name: 'Calcium' },
+];

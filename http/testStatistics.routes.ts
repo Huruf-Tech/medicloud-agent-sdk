@@ -28,7 +28,7 @@ export async function handleTestStatisticRoutes(
 	}
 
 	// GET /test-statistics/count
-	if (method === 'GET' && segments.length === 1 && segments[0] === "count") {
+	if (method === 'GET' && segments.length === 1 && segments[0] === 'count') {
 		const testStatisticsCount = await registry.countTestStatistics() ?? 0;
 		return json({ count: testStatisticsCount });
 	}

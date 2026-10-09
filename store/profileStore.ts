@@ -142,7 +142,9 @@ export class MachineProfileStore extends SQLiteStore
 	}
 
 	count(): number {
-		const rows = this.db.prepare(`SELECT COUNT(*) AS count FROM machine_profiles`).get() as { count: number };
+		const rows = this.db.prepare(
+			`SELECT COUNT(*) AS count FROM machine_profiles`,
+		).get() as { count: number };
 		return rows.count;
 	}
 

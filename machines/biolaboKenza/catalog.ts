@@ -8,6 +8,7 @@
  */
 
 import type { CatalogTestEntry } from '../../types.ts';
+import { managedCatalogTests } from '../../lib/catalogAccess.ts';
 
 export interface KenzaCatalogEntry {
 	readonly slot: number;
@@ -30,7 +31,11 @@ export const BIOLABO_KENZA_240TX_CATALOG: readonly KenzaCatalogEntry[] = [
 	entry(5, 'CR2', 'Creatinine', ['CREAT', 'CREATININE']),
 	entry(6, 'GL', 'Sugar', ['GLUCOSE', 'SUGAR', 'GLU']),
 	entry(7, 'BT1', 'T.Bilirubine', ['TBIL', 'T BILIRUBIN', 'TOTAL BILIRUBIN']),
-	entry(8, 'BD1', 'D.Bilirubine', ['DBIL', 'D BILIRUBIN', 'DIRECT BILIRUBIN']),
+	entry(8, 'BD1', 'D.Bilirubine', [
+		'DBIL',
+		'D BILIRUBIN',
+		'DIRECT BILIRUBIN',
+	]),
 	entry(9, 'AL2', 'GPT', ['ALT', 'GPT', 'ALANINE TRANSAMINASE']),
 	entry(10, 'AS2', 'GOT', ['AST', 'GOT', 'ASPARTATE TRANSAMINASE']),
 	entry(11, 'PH', 'Phosphorus', ['PHOS', 'PHOSPHORUS', 'PHOSPHATE']),
@@ -62,13 +67,20 @@ export const BIOLABO_KENZA_ORDER_CATALOG: readonly CatalogTestEntry[] =
 export function findKenzaAssay(value: string): KenzaCatalogEntry | undefined {
 	const normalized = normalizeCode(value);
 	const slotNumber = Number(normalized);
-	return BIOLABO_KENZA_240TX_CATALOG.find(
-		(e) =>
-			e.slot === slotNumber ||
-			normalizeCode(e.code) === normalized ||
-			normalizeCode(e.name) === normalized ||
-			e.aliases.some((alias) => normalizeCode(alias) === normalized),
+	const test = managedCatalogTests('biolabo-kenza').find((entry) =>
+		entry.slot === slotNumber ||
+		normalizeCode(entry.code) === normalized ||
+		normalizeCode(entry.name) === normalized ||
+		(entry.aliases ?? []).some((alias) =>
+			normalizeCode(alias) === normalized
+		)
 	);
+	return test && {
+		slot: test.slot ?? 0,
+		code: test.code,
+		name: test.name,
+		aliases: test.aliases ?? [],
+	};
 }
 
 /**

@@ -16,7 +16,7 @@ export const ASTM_CONTROL = {
 	CR: 0x0d, // Carriage Return - Terminates a record within the ASTM message. Every record ends with CR.
 
 	LF: 0x0a, // Line Feed - Usually follows CR to complete the record terminator (CRLF). Some instruments ignore it, but ASTM specifies CRLF.
-} as const; 
+} as const;
 
 /**
  * Delimiters declared in the H record (`H|\^&|...`).

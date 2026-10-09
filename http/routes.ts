@@ -1,16 +1,11 @@
 import * as z from '@zod/zod';
+import { handleCatalogRoutes } from './catalog.routes.ts';
 import type { MachineRegistry } from '../registry.ts';
 import { handleProfileRoutes } from './profile.routes.ts';
 import { handleOrderRoutes } from './orders.routes.ts';
 import { handleResultRoutes } from './results.routes.ts';
 import { handleTestStatisticRoutes } from './testStatistics.routes.ts';
-import {
-	empty,
-	errorResponse,
-	findCatalog,
-	json,
-	listCatalogs,
-} from './utils.ts';
+import { empty, errorResponse, json } from './utils.ts';
 import { NonEmptyStringSchema, parseInput } from './validation.ts';
 
 export interface MachineManagerApiContext {
@@ -19,10 +14,6 @@ export interface MachineManagerApiContext {
 const DriverQuerySchema = z.object({
 	id: NonEmptyStringSchema.optional(),
 	brand: NonEmptyStringSchema.optional(),
-}).strict();
-const CatalogQuerySchema = z.object({
-	machine: NonEmptyStringSchema.optional(),
-	driver: NonEmptyStringSchema.optional(),
 }).strict();
 
 // Http dispatcher. routes can access only registry methods
@@ -78,23 +69,15 @@ export function createMachineManagerHandler(
 					: json({ error: 'driver not found' }, 404);
 			}
 
-			// GET /catalogs, optionally filtered with ?driver=... or ?machine=...
-			if (
-				method === 'GET' && segments.length === 1 &&
-				segments[0] === 'catalogs'
-			) {
-				const query = parseInput(
-					CatalogQuerySchema,
-					Object.fromEntries(url.searchParams),
+			// catalog management
+			if (segments[0] === 'catalogs') {
+				return await handleCatalogRoutes(
+					ctx.registry,
+					req,
+					url,
+					method,
+					segments.slice(1),
 				);
-
-				const machine = query.machine ?? query.driver;
-				if (!machine) return json({ catalogs: listCatalogs() });
-
-				const catalog = findCatalog(machine);
-				return catalog
-					? json(catalog)
-					: json({ error: 'catalog not found' }, 404);
 			}
 
 			// profiles managemet

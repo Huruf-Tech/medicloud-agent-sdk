@@ -1,3 +1,5 @@
+import { managedCatalogTests } from '../../lib/catalogAccess.ts';
+
 export interface CobasC111CatalogEntry {
 	readonly hostCode: string;
 	readonly appCode: string;
@@ -49,12 +51,18 @@ export function findCobasC111Assay(
 	value: string,
 ): CobasC111CatalogEntry | undefined {
 	const wanted = normalize(value);
-	return COBAS_C111_CATALOG.find((entry) =>
-		normalize(entry.hostCode) === wanted ||
-		normalize(entry.appCode) === wanted ||
-		normalize(entry.shortName) === wanted ||
+	const test = managedCatalogTests('roche-cobas-c111').find((entry) =>
+		normalize(entry.code) === wanted ||
+		normalize(entry.deviceCode ?? entry.code) === wanted ||
+		normalize(entry.name) === wanted ||
 		(entry.aliases ?? []).some((alias) => normalize(alias) === wanted)
 	);
+	return test && {
+		hostCode: test.code,
+		appCode: test.deviceCode ?? test.code,
+		shortName: test.name,
+		aliases: test.aliases,
+	};
 }
 
 export function toCobasC111HostCode(value: string): string {

@@ -5,134 +5,153 @@ import { MachineOrderStore } from '../store/orderStore.ts';
 import { MachineResultStore } from '../store/resultStore.ts';
 import { MachineProfileStore } from '../store/profileStore.ts';
 import { MachineTestStatisticStore } from '../store/testStatisticStore.ts';
+import { CatalogStore } from '../store/catalogStore.ts';
+import { bindCatalogStore } from '../lib/catalogAccess.ts';
 import type {
-  IMachineOrderStore,
-  IMachineProfileStore,
-  IMachineResultStore,
-  IMachineSQLiteDB,
-  IMachineTestStatisticStore,
+	IMachineCatalogStore,
+	IMachineOrderStore,
+	IMachineProfileStore,
+	IMachineResultStore,
+	IMachineSQLiteDB,
+	IMachineTestStatisticStore,
 } from '../types.ts';
 
 export interface SqliteMachineDatabaseOptions {
-  path: string;
+	path: string;
 }
 
 export class SqliteMachineDatabase implements IMachineSQLiteDB {
-  private db?: DatabaseSync;
+	private db?: DatabaseSync;
 
-  private _profiles?: MachineProfileStore;
-  private _orders?: MachineOrderStore;
-  private _results?: MachineResultStore;
-  private _testStatistics?: MachineTestStatisticStore;
+	private _profiles?: MachineProfileStore;
+	private _orders?: MachineOrderStore;
+	private _results?: MachineResultStore;
+	private _testStatistics?: MachineTestStatisticStore;
+	private _catalogs?: CatalogStore;
 
-  constructor(private readonly options: SqliteMachineDatabaseOptions) { }
+	constructor(private readonly options: SqliteMachineDatabaseOptions) {}
 
-  get profiles(): IMachineProfileStore {
-    if (!this._profiles) {
-      throw new Error('Database is not connected');
-    }
+	get profiles(): IMachineProfileStore {
+		if (!this._profiles) {
+			throw new Error('Database is not connected');
+		}
 
-    return this._profiles;
-  }
+		return this._profiles;
+	}
 
-  get orders(): IMachineOrderStore {
-    if (!this._orders) {
-      throw new Error('Database is not connected');
-    }
+	get orders(): IMachineOrderStore {
+		if (!this._orders) {
+			throw new Error('Database is not connected');
+		}
 
-    return this._orders;
-  }
+		return this._orders;
+	}
 
-  get results(): IMachineResultStore {
-    if (!this._results) {
-      throw new Error('Database is not connected');
-    }
+	get results(): IMachineResultStore {
+		if (!this._results) {
+			throw new Error('Database is not connected');
+		}
 
-    return this._results;
-  }
+		return this._results;
+	}
 
-  get testStatistics(): IMachineTestStatisticStore {
-    if (!this._testStatistics) {
-      throw new Error('Database is not connected');
-    }
+	get testStatistics(): IMachineTestStatisticStore {
+		if (!this._testStatistics) {
+			throw new Error('Database is not connected');
+		}
 
-    return this._testStatistics;
-  }
+		return this._testStatistics;
+	}
 
-  get connected(): boolean {
-    return this.db !== undefined;
-  }
+	get catalogs(): IMachineCatalogStore {
+		if (!this._catalogs) throw new Error('Database is not connected');
+		return this._catalogs;
+	}
 
-  connect() {
-    if (this.db) return; // singleton connection
+	get connected(): boolean {
+		return this.db !== undefined;
+	}
 
-    this.db = this.openSqliteDatabase();
+	connect() {
+		if (this.db) return; // singleton connection
 
-    this._profiles = new MachineProfileStore(this.db);
-    this._orders = new MachineOrderStore(this.db);
-    this._results = new MachineResultStore(this.db);
-    this._testStatistics = new MachineTestStatisticStore(this.db);
-  }
+		const db = this.openSqliteDatabase();
+		try {
+			const catalogs = new CatalogStore(db);
+			catalogs.seedDefaults();
+			this.db = db;
+			this._profiles = new MachineProfileStore(db);
+			this._orders = new MachineOrderStore(db);
+			this._results = new MachineResultStore(db);
+			this._testStatistics = new MachineTestStatisticStore(db);
+			this._catalogs = catalogs;
+			bindCatalogStore(catalogs);
+		} catch (error) {
+			db.close();
+			throw error;
+		}
+	}
 
-  close(): void {
-    if (!this.db) return;
+	close(): void {
+		if (!this.db) return;
 
-    this.db.close();
-    this.db = undefined;
+		this.db.close();
+		this.db = undefined;
 
-    this._profiles = undefined;
-    this._orders = undefined;
-    this._results = undefined;
-    this._testStatistics = undefined;
-  }
+		this._profiles = undefined;
+		this._orders = undefined;
+		this._results = undefined;
+		this._testStatistics = undefined;
+		this._catalogs = undefined;
+		bindCatalogStore(undefined);
+	}
 
-  /** DatabaseSync transactions must stay synchronous to prevent interleaving. */
-  transaction<T>(callback: () => T): T {
-    if (!this.db) throw new Error('Database is not connected');
+	/** DatabaseSync transactions must stay synchronous to prevent interleaving. */
+	transaction<T>(callback: () => T): T {
+		if (!this.db) throw new Error('Database is not connected');
 
-    this.db.exec('BEGIN IMMEDIATE;');
-    try {
-      const result = callback();
-      this.db.exec('COMMIT;');
-      return result;
-    } catch (error) {
-      this.db.exec('ROLLBACK;');
-      throw error;
-    }
-  }
+		this.db.exec('BEGIN IMMEDIATE;');
+		try {
+			const result = callback();
+			this.db.exec('COMMIT;');
+			return result;
+		} catch (error) {
+			this.db.exec('ROLLBACK;');
+			throw error;
+		}
+	}
 
-  private openSqliteDatabase(): DatabaseSync {
-    ensureDbDirectory(this.options.path);
+	private openSqliteDatabase(): DatabaseSync {
+		ensureDbDirectory(this.options.path);
 
-    const db = new DatabaseSync(resolve(this.options.path));
+		const db = new DatabaseSync(resolve(this.options.path));
 
-    /**
-     * Database journal mode to WAL (Write-Ahead Logging).
-     * Write-Ahead Logging (WAL) means:
-     * 1. Changes are first written to a separate WAL file, not directly to the main database file.
-     * 2. The main database stays untouched until changes are checkpointed.
-     * It gives:
-     * - Better performance (especially for frequent writes).
-     * - Reading and writing can proceed concurrently.
-     * - Concurrent access:
-     * -- Readers can read while a writer is writing
-     * -- Reduces “database is locked” errors
-     * More efficient for multi-threaded apps
-     */
-    db.exec('PRAGMA journal_mode = WAL;');
-    db.exec('PRAGMA foreign_keys = ON;'); // enables foreign key constraint enforcement
-    this.createSchema(db);
-    return db;
-  }
+		/**
+		 * Database journal mode to WAL (Write-Ahead Logging).
+		 * Write-Ahead Logging (WAL) means:
+		 * 1. Changes are first written to a separate WAL file, not directly to the main database file.
+		 * 2. The main database stays untouched until changes are checkpointed.
+		 * It gives:
+		 * - Better performance (especially for frequent writes).
+		 * - Reading and writing can proceed concurrently.
+		 * - Concurrent access:
+		 * -- Readers can read while a writer is writing
+		 * -- Reduces “database is locked” errors
+		 * More efficient for multi-threaded apps
+		 */
+		db.exec('PRAGMA journal_mode = WAL;');
+		db.exec('PRAGMA foreign_keys = ON;'); // enables foreign key constraint enforcement
+		this.createSchema(db);
+		return db;
+	}
 
-  private createSchema(db: DatabaseSync): void {
+	private createSchema(db: DatabaseSync): void {
+		// relationShips:
+		// order.machineId === profile.id
+		// profile.driverId === driver.id
 
-    // relationShips:
-    // order.machineId === profile.id
-    // profile.driverId === driver.id
-
-    // Machine profile table
-    db.exec(`
+		// Machine profile table
+		db.exec(`
       CREATE TABLE IF NOT EXISTS machine_profiles (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
         driver_id   TEXT NOT NULL , -- if want to enforce one driver profile then apply UNIQUE
@@ -149,8 +168,8 @@ export class SqliteMachineDatabase implements IMachineSQLiteDB {
       );
       `);
 
-    // Machine orders table
-    db.exec(`
+		// Machine orders table
+		db.exec(`
       CREATE TABLE IF NOT EXISTS machine_orders (
         id                           INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -200,8 +219,8 @@ export class SqliteMachineDatabase implements IMachineSQLiteDB {
       );
       `);
 
-    // Machine results table
-    db.exec(`
+		// Machine results table
+		db.exec(`
       CREATE TABLE IF NOT EXISTS machine_results (
         id           INTEGER PRIMARY KEY AUTOINCREMENT,
         order_id     INTEGER NOT NULL,
@@ -221,8 +240,8 @@ export class SqliteMachineDatabase implements IMachineSQLiteDB {
       );
       `);
 
-    // One learned running-average row per machine profile and test code.
-    db.exec(`
+		// One learned running-average row per machine profile and test code.
+		db.exec(`
        CREATE TABLE IF NOT EXISTS machine_test_statistics (
         id                    INTEGER PRIMARY KEY AUTOINCREMENT,
         machine_id            INTEGER NOT NULL,
@@ -244,8 +263,33 @@ export class SqliteMachineDatabase implements IMachineSQLiteDB {
       );
       `);
 
-    // Indexes
-    db.exec(`
+		db.exec(`
+      CREATE TABLE IF NOT EXISTS machine_catalogs (
+        driver_id TEXT PRIMARY KEY COLLATE NOCASE,
+        machine TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS machine_catalog_tests (
+        driver_id TEXT NOT NULL COLLATE NOCASE,
+        code TEXT NOT NULL COLLATE NOCASE,
+        name TEXT NOT NULL,
+        analytes TEXT NOT NULL CHECK(json_valid(analytes) AND json_type(analytes) = 'array'),
+        aliases TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(aliases) AND json_type(aliases) = 'array'),
+        device_code TEXT,
+        unit TEXT,
+        normal_range TEXT,
+        category TEXT,
+        slot INTEGER CHECK(slot IS NULL OR slot > 0),
+        enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0, 1)),
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY(driver_id, code),
+        FOREIGN KEY(driver_id) REFERENCES machine_catalogs(driver_id) ON DELETE CASCADE
+      );
+    `);
+
+		// Indexes
+		db.exec(`
       CREATE INDEX IF NOT EXISTS idx_machine_profiles_enabled
         ON machine_profiles(enabled);
       CREATE INDEX IF NOT EXISTS idx_machine_orders_machine
@@ -273,5 +317,5 @@ export class SqliteMachineDatabase implements IMachineSQLiteDB {
       CREATE INDEX IF NOT EXISTS idx_machine_test_statistics_last_order
         ON machine_test_statistics(last_order_id);
       `);
-  }
+	}
 }

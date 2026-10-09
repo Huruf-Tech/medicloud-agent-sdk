@@ -307,8 +307,10 @@ export class MachineOrderStore extends SQLiteStore
 		return rows.map(mapOrderRow);
 	}
 
-	count():number {
-		const rows = this.db.prepare(`SELECT COUNT(*) AS count FROM machine_orders`).get() as { count: number };
+	count(): number {
+		const rows = this.db.prepare(
+			`SELECT COUNT(*) AS count FROM machine_orders`,
+		).get() as { count: number };
 		return rows.count;
 	}
 

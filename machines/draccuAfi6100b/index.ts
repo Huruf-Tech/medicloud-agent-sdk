@@ -12,6 +12,7 @@ import type {
 import { DRACCU_AFI_6100B_MODELS } from './catalog.ts';
 import { parseDrAccuResultLine } from './inbound.ts';
 import { buildOrm } from './outbound.ts';
+import { drAccuAfi6100bMachineId } from '../../lib/constants.ts';
 
 export interface DrAccuAfi6100bConfig extends MachineConfig {
 	host: string;
@@ -21,11 +22,9 @@ export interface DrAccuAfi6100bConfig extends MachineConfig {
 	estimatedMinutes: number;
 }
 
-export const drAccuAfi6100bMachineId = 'draccu-afi-6100b';
-
 export class DrAccuAfi6100b extends BaseMachine {
 	static readonly id = drAccuAfi6100bMachineId;
-	static readonly brand = 'DrAccu Afi 6100b';
+	static readonly brand = 'DRACCU AFI 6100B';
 	static readonly protocol = {
 		name: 'HL7 ORM over MLLP / DrAccu R-line',
 		version: '2.3.1',

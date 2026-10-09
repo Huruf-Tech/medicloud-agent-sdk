@@ -1,3 +1,5 @@
+import { managedCatalogTests } from '../../lib/catalogAccess.ts';
+
 export interface MaglumiAssay {
 	readonly code: string;
 	readonly name: string;
@@ -83,12 +85,21 @@ export const MAGLUMI_800_ASSAYS: readonly MaglumiAssay[] = [
 
 export function findMaglumiAssay(code: string): MaglumiAssay | undefined {
 	const wanted = normalize(code);
-	return MAGLUMI_800_ASSAYS.find((assay) =>
-		normalize(assay.code) === wanted ||
-		normalize(assay.name) === wanted ||
-		normalize(assay.deviceCode) === wanted ||
-		(assay.aliases ?? []).some((alias) => normalize(alias) === wanted)
+	const test = managedCatalogTests('snibe-maglumi-800').find((entry) =>
+		normalize(entry.code) === wanted ||
+		normalize(entry.name) === wanted ||
+		normalize(entry.deviceCode ?? entry.name) === wanted ||
+		(entry.aliases ?? []).some((alias) => normalize(alias) === wanted)
 	);
+	return test && {
+		code: test.code,
+		name: test.name,
+		deviceCode: test.deviceCode ?? test.name,
+		unit: test.unit ?? '',
+		normalRange: test.normalRange ?? '',
+		category: test.category ?? '',
+		aliases: test.aliases,
+	};
 }
 
 export function toMaglumiDeviceCode(code: string): string {

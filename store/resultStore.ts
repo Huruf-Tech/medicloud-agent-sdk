@@ -101,8 +101,10 @@ export class MachineResultStore extends SQLiteStore
 		return rows.map(mapResultRow);
 	}
 
-	count():number {
-		const rows = this.db.prepare(`SELECT COUNT(*) AS count FROM machine_results`).get() as { count: number };
+	count(): number {
+		const rows = this.db.prepare(
+			`SELECT COUNT(*) AS count FROM machine_results`,
+		).get() as { count: number };
 		return rows.count;
 	}
 }

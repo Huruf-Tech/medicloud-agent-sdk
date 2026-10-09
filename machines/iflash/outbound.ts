@@ -23,9 +23,11 @@ function nowStamp(): string {
 	const date = new Date();
 	const pad = (value: number) => String(value).padStart(2, '0');
 
-	return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())
-		}` +
-		`${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())
+	return `${date.getFullYear()}${pad(date.getMonth() + 1)}${
+		pad(date.getDate())
+	}` +
+		`${pad(date.getHours())}${pad(date.getMinutes())}${
+			pad(date.getSeconds())
 		}`;
 }
 
@@ -80,9 +82,11 @@ function orderRecord(order: MachineOrder, model = 'YHLO iFlash 3000'): string {
 	fields[2] = escapeAstmText(order.sampleId); // #3 sample number
 	// fields[3] = escapeAstmText(order.sampleId); // #4 instrument specimen id (barcode)
 	fields[3] = order.rackPosition
-		? `${escapeAstmText(order.sampleId)}^${escapeAstmText(order.rackPosition)}`
+		? `${escapeAstmText(order.sampleId)}^${
+			escapeAstmText(order.rackPosition)
+		}`
 		: escapeAstmText(order.sampleId);
-		
+
 	fields[4] = tests; // #5 ordered tests
 	fields[5] = 'R'; // #6 priority (normal)
 	fields[6] = nowStamp(); // #7 requested date/time

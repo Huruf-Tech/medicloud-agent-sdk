@@ -34,8 +34,8 @@ export const handleProfileRoutes = async (
 	}
 
 	// GET /profiles/count
-	if (method === 'GET' && segments.length === 1 && segments[0] === "count") {
-		const profileCount = await registry.countProfiles() ?? 0;;
+	if (method === 'GET' && segments.length === 1 && segments[0] === 'count') {
+		const profileCount = await registry.countProfiles() ?? 0;
 		return json({ count: profileCount });
 	}
 
@@ -93,7 +93,7 @@ export const handleProfileRoutes = async (
 
 	// POST /profiles/:machineId/start
 	if (segments.length === 2 && segments[1] === 'start' && method === 'POST') {
-		const registerMachine = await registry.getProfile(machineId)
+		const registerMachine = await registry.getProfile(machineId);
 		if (!registerMachine) {
 			throw new HttpError(
 				`Machine profile ${machineId} was not found.`,

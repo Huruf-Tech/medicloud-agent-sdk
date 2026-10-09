@@ -1,10 +1,10 @@
 /** Orderable analysis CBC parameter catalog for Sysmex KX-21 / KX-21N host output. */
 
 export const SYSMEX_KX21N_MODELS = [
-    'Sysmex KX-21N',
-    // 'Sysmex KX-21',
-    // 'KX-21N',
-    // 'KX-21',
+	'Sysmex KX-21N',
+	// 'Sysmex KX-21',
+	// 'KX-21N',
+	// 'KX-21',
 ] as const;
 
 /**
@@ -12,6 +12,6 @@ export const SYSMEX_KX21N_MODELS = [
  * hematology parameters are results within this panel, not separate orders.
  */
 export const SYSMEX_KX21N_ORDER_CATALOG = [{
-    code: 'CBC',
-    name: 'Complete Blood Count (CBC)',
+	code: 'CBC',
+	name: 'Complete Blood Count (CBC)',
 }] as const;

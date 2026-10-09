@@ -41,7 +41,7 @@ const handler = await manager.getHandler();
 
 Deno.serve(
 	{
-		hostname: "0.0.0.0",
+		hostname: '0.0.0.0',
 		port: 5001,
 		onListen: ({ hostname, port }) => {
 			console.info(

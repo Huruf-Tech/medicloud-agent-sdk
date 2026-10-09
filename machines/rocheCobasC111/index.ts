@@ -33,6 +33,7 @@ import {
 	buildCobasC111ResultQuery,
 	type CobasC111HostSettings,
 } from './outbound.ts';
+import { rocheCobasC111MachineId } from '../../lib/constants.ts';
 
 export interface RocheCobasC111Config extends MachineConfig {
 	portName: string;
@@ -54,11 +55,9 @@ export interface RocheCobasC111Config extends MachineConfig {
 	trace: boolean;
 }
 
-export const rocheCobasC111MachineId = 'roche-cobas-c111';
-
 export class RocheCobasC111 extends BaseMachine {
 	static readonly id = rocheCobasC111MachineId;
-	static readonly brand = 'ROCHE';
+	static readonly brand = 'ROCHE COBAS C111';
 	static readonly protocol = {
 		name: 'ASTM',
 		version: 'E1381/E1394-97 (Roche serial variant)',
@@ -77,14 +76,14 @@ export class RocheCobasC111 extends BaseMachine {
 				z.literal(7),
 				z.literal(8),
 				z.literal(9),
-			])
+			]),
 		),
 		stopBits: z.coerce.number().pipe(
 			z.union([
 				z.literal(1),
 				z.literal(1.5),
 				z.literal(2),
-			])
+			]),
 		),
 		parity: z.enum(['n', 'o', 'e']),
 		flowControl: z.enum(['none', 'xonxoff', 'rtscts']),
@@ -106,35 +105,152 @@ export class RocheCobasC111 extends BaseMachine {
 
 	// for frontend fields generation
 	static readonly configFields = [
-		{ key: 'serialPort', label: 'Serial port', type: 'string', required: true, default: 'COM1', hint: 'COM port name (e.g. COM3 on Windows, /dev/ttyS0 on Linux).' },
-		{ key: 'baud', label: 'Baud rate', type: 'number', required: true, default: 9600 },
 		{
-			key: 'dataBits', label: 'Data bits', type: 'select', required: true, default: '8',
-			options: [{ value: '5', label: '5' }, { value: '6', label: '6' }, { value: '7', label: '7' }, { value: '8', label: '8' }, { value: '9', label: '9' }],
+			key: 'serialPort',
+			label: 'Serial port',
+			type: 'string',
+			required: true,
+			default: 'COM3',
+			hint: 'COM port name (e.g. COM3 on Windows, /dev/ttyS0 on Linux).',
 		},
 		{
-			key: 'stopBits', label: 'Stop bits', type: 'select', required: true, default: '1',
-			options: [{ value: '1', label: '1' }, { value: '1.5', label: '1.5' }, { value: '2', label: '2' }],
+			key: 'baud',
+			label: 'Baud rate',
+			type: 'number',
+			required: true,
+			default: 9600,
 		},
 		{
-			key: 'parity', label: 'Parity', type: 'select', required: true, default: 'n',
-			options: [{ value: 'n', label: 'None (n)' }, { value: 'o', label: 'Odd (o)' }, { value: 'e', label: 'Even (e)' }],
+			key: 'dataBits',
+			label: 'Data bits',
+			type: 'select',
+			required: true,
+			default: '8',
+			options: [
+				{ value: '5', label: '5' },
+				{ value: '6', label: '6' },
+				{ value: '7', label: '7' },
+				{ value: '8', label: '8' },
+				{ value: '9', label: '9' },
+			],
 		},
 		{
-			key: 'flowControl', label: 'Flow control', type: 'select', required: true, default: 'none',
-			options: [{ value: 'none', label: 'None' }, { value: 'xonxoff', label: 'XON/XOFF' }, { value: 'rtscts', label: 'RTS/CTS' }],
+			key: 'stopBits',
+			label: 'Stop bits',
+			type: 'select',
+			required: true,
+			default: '1',
+			options: [{ value: '1', label: '1' }, {
+				value: '1.5',
+				label: '1.5',
+			}, { value: '2', label: '2' }],
 		},
-		{ key: 'reconnectDelayMs', label: 'Reconnect delay (ms)', type: 'number', required: true, default: 3000, hint: 'Wait time before reconnecting after a disconnect.' },
-		{ key: 'replyToQueries', label: 'Reply to queries', type: 'boolean', required: true, default: true, hint: 'Send worklist response when analyzer queries.' },
-		{ key: 'pushOrders', label: 'Push orders', type: 'boolean', required: true, default: false, hint: 'Proactively push pending orders to the analyzer.' },
-		{ key: 'pushIntervalMs', label: 'Push interval (ms)', type: 'number', required: true, default: 5000 },
-		{ key: 'resultPollingEnabled', label: 'Result polling', type: 'boolean', required: true, default: false },
-		{ key: 'resultPollInitialDelayMs', label: 'Poll initial delay (ms)', type: 'number', required: true, default: 5000 },
-		{ key: 'resultPollIntervalMs', label: 'Poll interval (ms)', type: 'number', required: true, default: 30000 },
-		{ key: 'hostSenderName', label: 'Host sender name', type: 'string', required: true, default: 'LIS', hint: 'Sender name sent in ASTM H record.' },
-		{ key: 'analyzerName', label: 'Analyzer name', type: 'string', required: true, default: 'cobas c111', hint: 'Receiver name expected in ASTM H record.' },
-		{ key: 'defaultComment', label: 'Default comment', type: 'string', required: false, default: '', hint: 'Comment appended to every order.' },
-		{ key: 'trace', label: 'Trace logging', type: 'boolean', required: true, default: false, hint: 'Enable verbose serial protocol logging.' },
+		{
+			key: 'parity',
+			label: 'Parity',
+			type: 'select',
+			required: true,
+			default: 'n',
+			options: [{ value: 'n', label: 'None (n)' }, {
+				value: 'o',
+				label: 'Odd (o)',
+			}, { value: 'e', label: 'Even (e)' }],
+		},
+		{
+			key: 'flowControl',
+			label: 'Flow control',
+			type: 'select',
+			required: true,
+			default: 'xonxoff',
+			options: [{ value: 'none', label: 'None' }, {
+				value: 'xonxoff',
+				label: 'XON/XOFF',
+			}, { value: 'rtscts', label: 'RTS/CTS' }],
+		},
+		{
+			key: 'reconnectDelayMs',
+			label: 'Reconnect delay (ms)',
+			type: 'number',
+			required: true,
+			default: 5000,
+			hint: 'Wait time before reconnecting after a disconnect.',
+		},
+		{
+			key: 'replyToQueries',
+			label: 'Reply to queries',
+			type: 'boolean',
+			required: true,
+			default: true,
+			hint: 'Send worklist response when analyzer queries.',
+		},
+		{
+			key: 'pushOrders',
+			label: 'Push orders',
+			type: 'boolean',
+			required: true,
+			default: false,
+			hint: 'Proactively push pending orders to the analyzer.',
+		},
+		{
+			key: 'pushIntervalMs',
+			label: 'Push interval (ms)',
+			type: 'number',
+			required: true,
+			default: 1000,
+		},
+		{
+			key: 'resultPollingEnabled',
+			label: 'Result polling',
+			type: 'boolean',
+			required: true,
+			default: true,
+		},
+		{
+			key: 'resultPollInitialDelayMs',
+			label: 'Poll initial delay (ms)',
+			type: 'number',
+			required: true,
+			default: 30000,
+		},
+		{
+			key: 'resultPollIntervalMs',
+			label: 'Poll interval (ms)',
+			type: 'number',
+			required: true,
+			default: 30000,
+		},
+		{
+			key: 'hostSenderName',
+			label: 'Host sender name',
+			type: 'string',
+			required: true,
+			default: 'Agent',
+			hint: 'Sender name sent in ASTM H record.',
+		},
+		{
+			key: 'analyzerName',
+			label: 'Analyzer name',
+			type: 'string',
+			required: true,
+			default: 'c111',
+			hint: 'Receiver name expected in ASTM H record.',
+		},
+		{
+			key: 'defaultComment',
+			label: 'Default comment',
+			type: 'string',
+			required: false,
+			default: 'Agent Com',
+			hint: 'Comment appended to every order.',
+		},
+		{
+			key: 'trace',
+			label: 'Trace logging',
+			type: 'boolean',
+			required: true,
+			default: false,
+			hint: 'Enable verbose serial protocol logging.',
+		},
 	] as const satisfies DriverConfigField[];
 
 	readonly id = RocheCobasC111.id;
@@ -151,14 +267,16 @@ export class RocheCobasC111 extends BaseMachine {
 		super();
 	}
 
-	override configure(config: z.infer<typeof RocheCobasC111.configSchema>): void {
+	override configure(
+		config: z.infer<typeof RocheCobasC111.configSchema>,
+	): void {
 		if (this.connected || this.running || this.com || this.protocol) {
 			throw new Error(
 				'Roche cobas c111 cannot be reconfigured while it is active.',
 			);
 		}
 
-		const parsed = RocheCobasC111.configSchema.parse(config)
+		const parsed = RocheCobasC111.configSchema.parse(config);
 		this.configuration = parsed;
 	}
 
@@ -433,7 +551,7 @@ export class RocheCobasC111 extends BaseMachine {
 		return {
 			hostSenderName: config.hostSenderName,
 			analyzerName: config.analyzerName,
-			defaultComment: config.defaultComment ?? "",
+			defaultComment: config.defaultComment ?? '',
 		};
 	}
 

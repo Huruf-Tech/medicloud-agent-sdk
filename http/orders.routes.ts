@@ -25,7 +25,7 @@ export const handleOrderRoutes = async (
 	method: string,
 	segments: string[],
 ): Promise<Response> => {
-	// GET /orders with or without queryf
+	// GET /orders with or without query
 	if (segments.length === 0 && method === 'GET') {
 		const query = parseInput(
 			ListOrdersQuerySchema,
@@ -35,7 +35,7 @@ export const handleOrderRoutes = async (
 	}
 
 	// GET /orders/count
-	if (method === 'GET' && segments.length === 1 && segments[0] === "count") {
+	if (method === 'GET' && segments.length === 1 && segments[0] === 'count') {
 		const orderCount = await registry.countOrders() ?? 0;
 		return json({ count: orderCount });
 	}
@@ -53,7 +53,9 @@ export const handleOrderRoutes = async (
 				new Date(createdAt.getTime() + 24 * 60 * 60 * 1_000),
 		};
 		const orderId = await registry.submitOrder(order);
-		return json({ order: orderId ? await registry.getOrder(orderId) : null }, 201);
+		return json({
+			order: orderId ? await registry.getOrder(orderId) : null,
+		}, 201);
 	}
 
 	if (segments.length === 0) {
@@ -91,7 +93,8 @@ export const handleOrderRoutes = async (
 		}
 		if (order.status !== 'failed' && order.status !== 'pending') {
 			throw new HttpError(
-				`Only failed or pending orders can be resent, order ${orderId} is ${order.status ?? 'pending'
+				`Only failed or pending orders can be resent, order ${orderId} is ${
+					order.status ?? 'pending'
 				}.`,
 				409,
 			);

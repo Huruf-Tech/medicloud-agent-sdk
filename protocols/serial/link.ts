@@ -253,7 +253,9 @@ export class SerialStringProtocol {
 			const reply = await this.waitForAck();
 			if (reply === KENZA_CONTROL.ACK) return;
 			this.log.warn(
-				`serial frame NAK from ${this.remoteId}, retrying (${attempt + 1})`,
+				`serial frame NAK from ${this.remoteId}, retrying (${
+					attempt + 1
+				})`,
 			);
 		}
 		throw new Error('serial frame rejected after maximum retries');

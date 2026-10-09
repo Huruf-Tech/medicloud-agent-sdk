@@ -22,6 +22,7 @@ import {
 	buildMaglumiNoOrderResponse,
 	buildMaglumiWorklistResponse,
 } from './outbound.ts';
+import { maglumi800MachineId } from '../../lib/constants.ts';
 
 export interface Maglumi800Config extends MachineConfig {
 	host: string;
@@ -29,14 +30,12 @@ export interface Maglumi800Config extends MachineConfig {
 	queryReplyDelayMs?: number;
 }
 
-export const maglumi800MachineId = 'snibe-maglumi-800';
-
 const DEFAULT_QUERY_REPLY_DELAY_MS = 0;
 const DEFAULT_QUERY_ALL_LIMIT = 20;
 
 export class Maglumi800 extends BaseMachine {
 	static readonly id = maglumi800MachineId;
-	static readonly brand = 'SNIBE';
+	static readonly brand = 'SNIBE MAGLUMI 800';
 	static readonly protocol = { name: 'ASTM', version: 'E1394-97' } as const;
 	static readonly transportType: DriverTransportType = 'tcp';
 	static readonly models = MAGLUMI_800_MODELS;
@@ -50,9 +49,30 @@ export class Maglumi800 extends BaseMachine {
 
 	// for frontend fields generation
 	static readonly configFields = [
-		{ key: 'host', label: 'Host', type: 'string', required: true, default: '0.0.0.0', hint: 'IP address the analyzer connects to.' },
-		{ key: 'port', label: 'Port', type: 'number', required: true, default: 7001, hint: 'TCP port (1–65535).' },
-		{ key: 'queryReplyDelayMs', label: 'Query reply delay (ms)', type: 'number', required: false, default: 0, hint: 'Milliseconds to wait before replying to a query.' },
+		{
+			key: 'host',
+			label: 'Host',
+			type: 'string',
+			required: true,
+			default: '0.0.0.0',
+			hint: 'IP address the analyzer connects to.',
+		},
+		{
+			key: 'port',
+			label: 'Port',
+			type: 'number',
+			required: true,
+			default: 7001,
+			hint: 'TCP port (1–65535).',
+		},
+		{
+			key: 'queryReplyDelayMs',
+			label: 'Query reply delay (ms)',
+			type: 'number',
+			required: false,
+			default: 0,
+			hint: 'Milliseconds to wait before replying to a query.',
+		},
 	] as const satisfies DriverConfigField[];
 
 	readonly id = Maglumi800.id;

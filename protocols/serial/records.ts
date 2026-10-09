@@ -44,8 +44,7 @@ export function encodeKenzaOrder(
 	format: KenzaIdFormat = {},
 ): string {
 	const widths = resolveFieldWidths(format);
-	const head =
-		kenzaFixed(order.patient_id, widths.PATIENT_ID) +
+	const head = kenzaFixed(order.patient_id, widths.PATIENT_ID) +
 		kenzaFixed(order.patient_name, KENZA_ID9.PATIENT_NAME) +
 		kenzaFixed(order.species, KENZA_ID9.SPECIES);
 	const tests = order.tests
@@ -85,6 +84,8 @@ export function decodeKenzaResult(
 	return { patient_id, patient_name, species, results };
 }
 
-function resolveFieldWidths(format: KenzaIdFormat): typeof KENZA_ID8 | typeof KENZA_ID9 {
+function resolveFieldWidths(
+	format: KenzaIdFormat,
+): typeof KENZA_ID8 | typeof KENZA_ID9 {
 	return format.patientIdWidth === 8 ? KENZA_ID8 : KENZA_ID9;
 }

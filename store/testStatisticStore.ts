@@ -88,7 +88,9 @@ export class MachineTestStatisticStore extends SQLiteStore
 	}
 
 	count(): number {
-		const rows = this.db.prepare(`SELECT COUNT(*) AS count FROM machine_test_statistics`).get() as { count: number };
+		const rows = this.db.prepare(
+			`SELECT COUNT(*) AS count FROM machine_test_statistics`,
+		).get() as { count: number };
 		return rows.count;
 	}
 

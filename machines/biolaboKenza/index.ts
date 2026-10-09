@@ -36,6 +36,7 @@ import { KenzaSerialProtocol } from '../../protocols/serial/variants/kenza.ts';
 import { BIOLABO_KENZA_MODELS } from './catalog.ts';
 import { parseKenzaPayload } from './inbound.ts';
 import { buildKenzaOrder } from './outbound.ts';
+import { biolaboKenzaMachineId } from '../../lib/constants.ts';
 
 export interface BiolaboKenzaConfig extends MachineConfig {
 	// connection mode
@@ -64,8 +65,6 @@ export interface BiolaboKenzaConfig extends MachineConfig {
 	// debug
 	trace: boolean;
 }
-
-export const biolaboKenzaMachineId = 'biolabo-kenza';
 
 export class BiolaboKenza extends BaseMachine {
 	static readonly id = biolaboKenzaMachineId;
@@ -125,7 +124,8 @@ export class BiolaboKenza extends BaseMachine {
 				{ value: 'serial', label: 'Direct RS-232 serial' },
 				{ value: 'tcp-bridge', label: 'TCP bridge (serial-to-TCP)' },
 			],
-			hint: 'Serial uses a COM port directly. TCP bridge connects to a serial redirector.',
+			hint:
+				'Serial uses a COM port directly. TCP bridge connects to a serial redirector.',
 		},
 		{
 			key: 'serialPort',
@@ -133,7 +133,8 @@ export class BiolaboKenza extends BaseMachine {
 			type: 'string',
 			required: true,
 			default: 'COM4',
-			hint: 'COM port the Kenza RS-232 cable is plugged into, e.g. COM4 on Windows.',
+			hint:
+				'COM port the Kenza RS-232 cable is plugged into, e.g. COM4 on Windows.',
 		},
 		{
 			key: 'baud',
@@ -207,7 +208,8 @@ export class BiolaboKenza extends BaseMachine {
 			type: 'string',
 			required: true,
 			default: '127.0.0.1',
-			hint: 'Host address of the serial-to-TCP bridge (only used when transport is tcp-bridge).',
+			hint:
+				'Host address of the serial-to-TCP bridge (only used when transport is tcp-bridge).',
 		},
 		{
 			key: 'port',
@@ -215,7 +217,8 @@ export class BiolaboKenza extends BaseMachine {
 			type: 'number',
 			required: true,
 			default: 9100,
-			hint: 'Port of the serial-to-TCP bridge (only used when transport is tcp-bridge).',
+			hint:
+				'Port of the serial-to-TCP bridge (only used when transport is tcp-bridge).',
 		},
 		{
 			key: 'idLength',
@@ -227,7 +230,8 @@ export class BiolaboKenza extends BaseMachine {
 				{ value: '8', label: '8 (Id8 variant)' },
 				{ value: '9', label: '9 (Id9 variant)' },
 			],
-			hint: 'Fixed-width patient ID field as configured on the Kenza analyzer.',
+			hint:
+				'Fixed-width patient ID field as configured on the Kenza analyzer.',
 		},
 		{
 			key: 'pushIntervalMs',
@@ -235,7 +239,8 @@ export class BiolaboKenza extends BaseMachine {
 			type: 'number',
 			required: true,
 			default: 5000,
-			hint: 'How often the LIS polls for pending orders and pushes them to the analyzer.',
+			hint:
+				'How often the LIS polls for pending orders and pushes them to the analyzer.',
 		},
 		{
 			key: 'estimatedMinutes',
@@ -243,7 +248,8 @@ export class BiolaboKenza extends BaseMachine {
 			type: 'number',
 			required: true,
 			default: 15,
-			hint: 'Initial completion time estimate shown while a sample is being analyzed.',
+			hint:
+				'Initial completion time estimate shown while a sample is being analyzed.',
 		},
 		{
 			key: 'trace',
@@ -251,7 +257,8 @@ export class BiolaboKenza extends BaseMachine {
 			type: 'boolean',
 			required: true,
 			default: false,
-			hint: 'Enable verbose protocol logging (raw payloads, BCC values, push attempts).',
+			hint:
+				'Enable verbose protocol logging (raw payloads, BCC values, push attempts).',
 		},
 	] as const satisfies DriverConfigField[];
 
@@ -362,7 +369,9 @@ export class BiolaboKenza extends BaseMachine {
 		if (config.trace) {
 			const bytes = new TextEncoder().encode(payload);
 			this.createTraceLogger().info(
-				`Kenza RX len=${payload.length} visible="${visibleBytes(bytes)}" hex=${formatBytes(bytes)}`,
+				`Kenza RX len=${payload.length} visible="${
+					visibleBytes(bytes)
+				}" hex=${formatBytes(bytes)}`,
 			);
 		}
 
@@ -383,7 +392,9 @@ export class BiolaboKenza extends BaseMachine {
 		const config = this.requireConfiguration();
 
 		this.pushTimer = setInterval(async () => {
-			if (this.pushing || !this.kenzaConn || this.kenzaConn.isClosed) return;
+			if (this.pushing || !this.kenzaConn || this.kenzaConn.isClosed) {
+				return;
+			}
 
 			const pending = [...this.pendingOrders.values()].filter(
 				(o) => o.status === 'pending',
@@ -401,8 +412,10 @@ export class BiolaboKenza extends BaseMachine {
 						const bytes = new TextEncoder().encode(payload);
 						this.createTraceLogger().info(
 							`Kenza TX sample="${order.sampleId}" Id${config.idLength} ` +
-							`tests=[${order.tests.join(',')}] ` +
-							`visible="${visibleBytes(bytes)}" hex=${formatBytes(bytes)}`,
+								`tests=[${order.tests.join(',')}] ` +
+								`visible="${visibleBytes(bytes)}" hex=${
+									formatBytes(bytes)
+								}`,
 						);
 					}
 
