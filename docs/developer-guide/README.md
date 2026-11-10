@@ -28,6 +28,7 @@ offers a small HTTP API, so other programs can control it.
 | 11 | [Testing](11-testing.md) | Running the tests, and testing without a real analyzer |
 | 12 | [How-to recipes](12-how-to.md) | Add a new analyzer driver, add a new protocol, and other tasks |
 | 13 | [Troubleshooting with real analyzers](13-troubleshooting.md) | Reading raw logs and fixing common failures |
+| 14 | [Order recovery and driver boundaries](14-order-recovery-and-driver-boundaries.md) | Local order state, resend rules, and the post-commit result callback |
 | - | [Known issues](KNOWN_ISSUES.md) | The bug list from the code review |
 
 ## Quick start

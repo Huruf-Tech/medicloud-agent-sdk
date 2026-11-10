@@ -1,12 +1,12 @@
 SDK v3 Structure Rules
 ======================
 
-Important migration rule
-------------------------
+Historical migration context
+----------------------------
+The migration notes below refer to the old repository layout. For current paths and driver registration, see docs/developer-guide/03-architecture.md and docs/developer-guide/12-how-to.md.
+
 - The legacy src/ implementation is treated as tested reference code.
-- Do not edit src/ while migrating machines into sdk_v3/.
-- When adding a machine to sdk_v3/, copy the proven workflow/field behavior
-  from src/ and reorganize it without changing analyzer semantics.
+- During the migration, the legacy implementation was left unchanged while analyzer behavior was carried forward into sdk_v3/.
 
 Core layers
 -----------

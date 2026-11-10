@@ -133,3 +133,11 @@ CatalogView { id, driverId, machine, tests[], source:'database' }
 - Drivers use the catalog to send codes to the analyzer and to name the codes they receive:
   iFlash channel numbers, Maglumi device names, Roche host codes, Kenza slots and codes, and the
   Sysmex and Bonavera Count analyte units.
+
+## Where to change a test code or analyzer alias
+
+A catalog belongs to a driver family. Multiple machine profiles using that driver can therefore share the same catalog. The [registry](../../registry.ts#L190) checks built-in static catalogs first and then searches the database by driver ID or machine name. Static catalogs are read-only through registry operations. Managed database catalogs are seeded when absent, so restarting with updated seed data does not overwrite a lab's existing catalog.
+
+For a database catalog, [the catalog store](../../store/catalogStore.ts) checks every profile using that driver before editing or deleting an existing test. If a pending or testing order contains the code, the edit is blocked. Completed orders do not trigger this guard. Database catalog changes invalidate the cached catalog so later reads can see the new values.
+
+A default order test is a code the driver can use when a caller sends no explicit test list. For database catalogs, a default code is usable only if its entry still exists and is enabled. If submission reports that a code is required, check both the caller's selection and the catalog's enabled defaults.
